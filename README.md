@@ -42,3 +42,6 @@ Currency & Crypto Tracker — это мобильное приложение, р
 - Конвертер валют
 - Отображение изменения цены за 24 часа
 - Добавление избранных валют
+
+
+Figma - https://www.figma.com/make/aewyEwCASppf9QAfMvW7d5/Currency---Crypto-Tracker-UI?t=SIutfhI3qynxGO90-1
