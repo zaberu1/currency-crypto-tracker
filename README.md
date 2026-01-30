@@ -1,16 +1,26 @@
-# currency_crypto_tracker
+Авторы:Ан и Сериккарим
+# 🚀 Crypto Tracker
 
-A new Flutter project.
+*Crypto Tracker* — это мобильное приложение для отслеживания цен криптовалют в реальном времени.  
+Приложение позволяет быстро получать актуальные данные рынка, анализировать изменения стоимости и следить за популярными криптоактивами в удобном интерфейсе.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## 📱 Основные возможности
 
-A few resources to get you started if this is your first Flutter project:
+✅ Просмотр актуальных цен криптовалют  
+✅ Отслеживание изменений стоимости (рост / падение)  
+✅ Удобный и современный UI  
+✅ Быстрая загрузка данных через API  
+✅ Поддержка Android / iOS / Web (Flutter)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🛠️ Технологии
+
+Проект разработан с использованием:
+
+- *Flutter*
+- *Dart*
+- REST API для получения данных о криптовалютах
+- Material UI
