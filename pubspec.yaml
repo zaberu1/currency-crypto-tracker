@@ -10,15 +10,25 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Форматирование данных
+  intl: ^0.19.0
+
   # Для HTTP запросов к API
   http: ^0.13.5
 
   # Для управления состоянием
   provider: ^6.1.2
 
+  # Для локального хранения данных (аутентификация)
+  shared_preferences: ^2.2.2
+
+  # Для хэширования паролей (безопасное хранение)
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^2.0.0
 
 flutter:

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
@@ -38,28 +39,53 @@ class CurrencyData with ChangeNotifier {
   bool isLoading = true;
   String error = '';
 
-  // Основные валюты
   final List<String> availableCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'KZT', 'RUB', 'CNY'];
 
-  // Загрузка всех данных
+  // ===================== Автообновление =====================
+  Timer? _uiTimer;
+  Timer? _apiTimer;
+  DateTime _lastApiUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+  static const Duration _apiInterval = Duration(seconds: 10);
+
+  void startAutoRefresh() {
+    stopAutoRefresh();
+
+    // UI обновляется каждую секунду
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      notifyListeners();
+    });
+
+    // API обновляется раз в 10 секунд
+    _apiTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      final now = DateTime.now();
+      if (now.difference(_lastApiUpdate) >= _apiInterval) {
+        _lastApiUpdate = now;
+        await refreshData();
+      }
+    });
+  }
+
+  void stopAutoRefresh() {
+    _uiTimer?.cancel();
+    _apiTimer?.cancel();
+    _uiTimer = null;
+    _apiTimer = null;
+  }
+
+  // ===================== Загрузка данных =====================
   Future<void> loadData() async {
     try {
       isLoading = true;
       error = '';
       notifyListeners();
 
-      // Очищаем предыдущие данные
       assets.clear();
 
-      // Загружаем криптовалюты
       await _loadCryptos();
-
-      // Загружаем валюты
       await _loadCurrencies();
 
       isLoading = false;
       notifyListeners();
-
     } catch (e) {
       error = 'Failed to load data: $e';
       isLoading = false;
@@ -67,7 +93,6 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // Загрузка криптовалют с реальными данными
   Future<void> _loadCryptos() async {
     try {
       final cryptoList = await _apiService.getDetailedCryptoData();
@@ -95,18 +120,15 @@ class CurrencyData with ChangeNotifier {
         }
       }
 
-      // Если данных нет, создаем демо-данные
       if (assets.where((a) => a.type == 'crypto').isEmpty) {
         _createDemoCryptoData();
       }
-
     } catch (e) {
       print('Error loading cryptos: $e');
       _createDemoCryptoData();
     }
   }
 
-  // Создание демо-данных, если API не работает
   void _createDemoCryptoData() {
     final demoCryptos = [
       {
@@ -183,13 +205,11 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // Загрузка валют
   Future<void> _loadCurrencies() async {
     try {
       final exchangeData = await _apiService.getExchangeRates('USD');
       exchangeRates = Map<String, double>.from(exchangeData['rates'] ?? {});
 
-      // Добавляем USD как базовую валюту
       final usdAsset = Asset(
         id: 'USD',
         name: 'US Dollar',
@@ -204,7 +224,6 @@ class CurrencyData with ChangeNotifier {
       );
       assets.add(usdAsset);
 
-      // Добавляем основные валюты в assets
       for (var currency in availableCurrencies) {
         if (currency != 'USD' && exchangeRates.containsKey(currency)) {
           final rate = exchangeRates[currency]!;
@@ -223,15 +242,12 @@ class CurrencyData with ChangeNotifier {
           assets.add(asset);
         }
       }
-
     } catch (e) {
       print('Error loading currencies: $e');
-      // Создаем демо-данные для валют
       _createDemoCurrencyData();
     }
   }
 
-  // Получение названия валюты
   String _getCurrencyName(String code) {
     final names = {
       'USD': 'US Dollar',
@@ -248,7 +264,6 @@ class CurrencyData with ChangeNotifier {
   }
 
   void _createDemoCurrencyData() {
-    // Добавляем USD
     final usdAsset = Asset(
       id: 'USD',
       name: 'US Dollar',
@@ -288,12 +303,10 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // Обновление данных
   Future<void> refreshData() async {
     await loadData();
   }
 
-  // Добавление в избранное
   void toggleFavorite(String assetId) {
     final assetIndex = assets.indexWhere((asset) => asset.id == assetId);
     if (assetIndex != -1) {
@@ -309,7 +322,6 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // Поиск активов
   List<Asset> searchAssets(String query) {
     if (query.isEmpty) return assets;
 
@@ -319,7 +331,6 @@ class CurrencyData with ChangeNotifier {
     }).toList();
   }
 
-  // Форматирование чисел
   String formatNumber(double number, {int decimals = 2}) {
     if (number >= 1000000000000) {
       return '\$${(number / 1000000000000).toStringAsFixed(decimals)}T';
@@ -333,135 +344,72 @@ class CurrencyData with ChangeNotifier {
     return '\$${number.toStringAsFixed(decimals)}';
   }
 
-  // Получение цвета для изменения цены
   Color getChangeColor(double change) {
     if (change > 0) return Colors.green;
     if (change < 0) return Colors.red;
     return Colors.grey;
   }
 
-  // Получение иконки для изменения цены
   IconData getChangeIcon(double change) {
     if (change > 0) return Icons.arrow_upward;
     if (change < 0) return Icons.arrow_downward;
     return Icons.horizontal_rule;
   }
 
-  // КОНВЕРТАЦИЯ - ДОБАВЛЕННЫЙ МЕТОД
   Future<double> convert(String from, String to, double amount) async {
     try {
-      // Парсим символы из строки
-      String fromSymbol = from;
-      String toSymbol = to;
+      String fromSymbol = from.contains(' - ') ? from.split(' - ')[0] : from;
+      String toSymbol = to.contains(' - ') ? to.split(' - ')[0] : to;
 
-      // Удаляем описание если есть
-      if (from.contains(' - ')) {
-        fromSymbol = from.split(' - ')[0];
-      }
-      if (to.contains(' - ')) {
-        toSymbol = to.split(' - ')[0];
-      }
-
-      // Если обе валюты (не крипто) - используем exchange rate API
       final fromIsCrypto = assets.any((a) => a.symbol == fromSymbol && a.type == 'crypto');
       final toIsCrypto = assets.any((a) => a.symbol == toSymbol && a.type == 'crypto');
 
       if (!fromIsCrypto && !toIsCrypto) {
-        // Валюты к валюте
-        final result = await _apiService.convertCurrency(fromSymbol, toSymbol, amount);
-        return result;
+        return await _apiService.convertCurrency(fromSymbol, toSymbol, amount);
       }
 
-      // Находим активы
       final fromAsset = assets.firstWhere(
             (asset) => asset.symbol == fromSymbol,
-        orElse: () {
-          // Если не нашли, создаем временный актив
-          if (fromSymbol == 'USD') {
-            return Asset(
-              id: 'USD',
-              name: 'US Dollar',
-              symbol: 'USD',
-              price: 1.0,
-              priceChange1h: 0.0,
-              priceChange24h: 0.0,
-              priceChange7d: 0.0,
-              volume24h: 0.0,
-              marketCap: 0.0,
-              type: 'currency',
-            );
-          }
-          // Для других валют используем exchange rate
-          final rate = exchangeRates[fromSymbol] ?? 1.0;
-          return Asset(
-            id: fromSymbol,
-            name: fromSymbol,
-            symbol: fromSymbol,
-            price: rate,
-            priceChange1h: 0.0,
-            priceChange24h: 0.0,
-            priceChange7d: 0.0,
-            volume24h: 0.0,
-            marketCap: 0.0,
-            type: 'currency',
-          );
-        },
+        orElse: () => Asset(
+          id: fromSymbol,
+          name: fromSymbol,
+          symbol: fromSymbol,
+          price: exchangeRates[fromSymbol] ?? 1.0,
+          priceChange1h: 0,
+          priceChange24h: 0,
+          priceChange7d: 0,
+          volume24h: 0,
+          marketCap: 0,
+          type: 'currency',
+        ),
       );
 
       final toAsset = assets.firstWhere(
             (asset) => asset.symbol == toSymbol,
-        orElse: () {
-          // Если не нашли, создаем временный актив
-          if (toSymbol == 'USD') {
-            return Asset(
-              id: 'USD',
-              name: 'US Dollar',
-              symbol: 'USD',
-              price: 1.0,
-              priceChange1h: 0.0,
-              priceChange24h: 0.0,
-              priceChange7d: 0.0,
-              volume24h: 0.0,
-              marketCap: 0.0,
-              type: 'currency',
-            );
-          }
-          // Для других валют используем exchange rate
-          final rate = exchangeRates[toSymbol] ?? 1.0;
-          return Asset(
-            id: toSymbol,
-            name: toSymbol,
-            symbol: toSymbol,
-            price: rate,
-            priceChange1h: 0.0,
-            priceChange24h: 0.0,
-            priceChange7d: 0.0,
-            volume24h: 0.0,
-            marketCap: 0.0,
-            type: 'currency',
-          );
-        },
+        orElse: () => Asset(
+          id: toSymbol,
+          name: toSymbol,
+          symbol: toSymbol,
+          price: exchangeRates[toSymbol] ?? 1.0,
+          priceChange1h: 0,
+          priceChange24h: 0,
+          priceChange7d: 0,
+          volume24h: 0,
+          marketCap: 0,
+          type: 'currency',
+        ),
       );
 
-      // Конвертация через USD
-      // from -> USD -> to
-      final fromPriceInUSD = fromAsset.type == 'crypto' ? fromAsset.price : 1.0;
-      final toPriceInUSD = toAsset.type == 'crypto' ? toAsset.price : 1.0;
-
       if (fromAsset.type == 'currency' && toAsset.type == 'currency') {
-        // Валюта к валюте
         return (amount / fromAsset.price) * toAsset.price;
       } else if (fromAsset.type == 'crypto' && toAsset.type == 'crypto') {
-        // Крипто к крипто
-        return (amount * fromPriceInUSD) / toPriceInUSD;
+        return (amount * fromAsset.price) / toAsset.price;
       } else {
-        // Смешанная конвертация (крипто-валюта)
         final amountInUSD = fromAsset.type == 'crypto'
-            ? amount * fromPriceInUSD
+            ? amount * fromAsset.price
             : amount / fromAsset.price;
-
         return toAsset.type == 'crypto'
-            ? amountInUSD / toPriceInUSD
+            ? amountInUSD / toAsset.price
             : amountInUSD * toAsset.price;
       }
     } catch (e) {
@@ -470,38 +418,27 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // ДОБАВЛЕННЫЙ МЕТОД: Получение списка валют для Dropdown
   List<String> getCurrencyList() {
     final currencyAssets = assets.where((a) => a.type == 'currency').toList();
     return currencyAssets.map((asset) => '${asset.symbol} - ${asset.name}').toList();
   }
 
-  // ДОБАВЛЕННЫЙ МЕТОД: Получение списка криптовалют для Dropdown
   List<String> getCryptoListForDropdown() {
     final cryptoAssets = assets.where((a) => a.type == 'crypto').toList();
     return cryptoAssets.map((asset) => '${asset.symbol} - ${asset.name}').toList();
   }
 
-  // ДОБАВЛЕННЫЙ МЕТОД: Получение всех опций для конвертера
   List<String> getConverterOptions() {
     final allOptions = <String>[];
-
-    // Добавляем валюты
-    final currencies = assets.where((a) => a.type == 'currency').toList();
-    for (var currency in currencies) {
-      allOptions.add('${currency.symbol} - ${currency.name}');
+    for (var asset in assets.where((a) => a.type == 'currency')) {
+      allOptions.add('${asset.symbol} - ${asset.name}');
     }
-
-    // Добавляем криптовалюты
-    final cryptos = assets.where((a) => a.type == 'crypto').toList();
-    for (var crypto in cryptos) {
-      allOptions.add('${crypto.symbol} - ${crypto.name}');
+    for (var asset in assets.where((a) => a.type == 'crypto')) {
+      allOptions.add('${asset.symbol} - ${asset.name}');
     }
-
     return allOptions;
   }
 
-  // ДОБАВЛЕННЫЙ МЕТОД: Получение актива по ID
   Asset? getAssetById(String id) {
     try {
       return assets.firstWhere((asset) => asset.id == id);
@@ -510,7 +447,6 @@ class CurrencyData with ChangeNotifier {
     }
   }
 
-  // ДОБАВЛЕННЫЙ МЕТОД: Получение актива по символу
   Asset? getAssetBySymbol(String symbol) {
     try {
       return assets.firstWhere((asset) => asset.symbol == symbol);

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../widgets/asset_card.dart';
 import '../widgets/bottom_nav.dart';
 import '../data_provider.dart';
+import '../services/auth_service.dart'; // Добавляем сервис аутентификации
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,6 +37,80 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isRefreshing = false);
   }
 
+  // Функция выхода из аккаунта
+  Future<void> _logout() async {
+    final authService = AuthService();
+    await authService.logout();
+
+    // Переходим на экран входа
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  // Функция для показа диалога подтверждения выхода
+  Future<void> _showLogoutDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Выход из аккаунта',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: const Text(
+            'Вы уверены, что хотите выйти из аккаунта?',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: const Text(
+                'Отмена',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _logout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.2),
+                foregroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.red.withOpacity(0.3)),
+                ),
+              ),
+              child: const Text(
+                'Выйти',
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -59,6 +134,27 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         backgroundColor: const Color(0xFF1E1E1E),
         actions: [
+          // Кнопка выхода
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.redAccent.withOpacity(0.1),
+                ),
+                child: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: Colors.redAccent,
+                  size: 22,
+                ),
+              ),
+              onPressed: _showLogoutDialog,
+              tooltip: 'Выйти из аккаунта',
+            ),
+          ),
+          // Кнопка обновления
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: IconButton(
@@ -209,6 +305,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // Отображаем текущего пользователя
+                    FutureBuilder<String?>(
+                      future: AuthService().getCurrentUser(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null) {
+                          return Text(
+                            'User: ${snapshot.data}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                    ),
                     Text(
                       'Showing ${displayAssets.length} assets',
                       style: TextStyle(

@@ -30,69 +30,21 @@ class BottomNav extends StatelessWidget {
       showUnselectedLabels: true,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
-      items: [
+      items: const [
         BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: currentIndex == 0
-                  ? Colors.blueAccent.withOpacity(0.2)
-                  : Colors.transparent,
-            ),
-            child: const Icon(Icons.home),
-          ),
+          icon: Icon(Icons.home_rounded),
+          activeIcon: Icon(Icons.home_filled),
           label: 'Home',
         ),
         BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: currentIndex == 1
-                  ? Colors.blueAccent.withOpacity(0.2)
-                  : Colors.transparent,
-            ),
-            child: const Icon(Icons.swap_horiz),
-          ),
+          icon: Icon(Icons.currency_exchange_rounded),
+          activeIcon: Icon(Icons.currency_exchange),
           label: 'Converter',
         ),
         BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: currentIndex == 2
-                  ? Colors.blueAccent.withOpacity(0.2)
-                  : Colors.transparent,
-            ),
-            child: const Icon(Icons.star),
-          ),
+          icon: Icon(Icons.favorite_border_rounded),
+          activeIcon: Icon(Icons.favorite_rounded),
           label: 'Favorites',
-          activeIcon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.blueAccent.withOpacity(0.2),
-            ),
-            child: const Icon(
-              Icons.star,
-              color: Colors.yellow,
-            ),
-          ),
-        ),
-        BottomNavigationBarItem(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: currentIndex == 3
-                  ? Colors.blueAccent.withOpacity(0.2)
-                  : Colors.transparent,
-            ),
-            child: const Icon(Icons.refresh),
-          ),
-          label: 'Refresh',
         ),
       ],
     );
